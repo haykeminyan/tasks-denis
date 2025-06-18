@@ -1,2 +1,5 @@
 pdfplumber==0.11.7
 pandas==2.3.0
+fake-agent==0.1.4
+uvicorn==0.34.3
+fastapi==0.115.13
