@@ -81,6 +81,7 @@ for pdf_file, pdf_values in pdf_data_per_file.items():
     else:
         print(f"OK: {pdf_file} — нет несовпадений")
 
+# проверка когда есть excel значение но нет pdf
 for excel_file, excel_values in excel_data_per_file.items():
     excel_name = os.path.splitext(excel_file)[0]
     matching_pdf_file = next(
@@ -108,8 +109,42 @@ for excel_file, excel_values in excel_data_per_file.items():
 
     if missing_pdf_numbers:
         df = pd.DataFrame(missing_pdf_numbers)
-        res_path = os.path.join(output_folder, f"missing_{excel_name}.csv")
+        res_path = os.path.join(output_folder, f"missing_pdf_values_{excel_name}.csv")
         df.to_csv(res_path, index=False)
         print(f"Несовпадения сохранены: {res_path}")
     else:
         print(f"{excel_file}: все заявки найдены в {matching_pdf_file}")
+
+# проверка когда есть pdf значение но нет excel
+for pdf_file, pdf_values in pdf_data_per_file.items():
+    pdf_name = os.path.splitext(pdf_file)[0]
+    matching_excel_file = next(
+        (excel_file for excel_file in excel_data_per_file if os.path.splitext(excel_file)[0] == pdf_name),
+        None
+    )
+
+    if not matching_excel_file:
+        print(f"Нет Excel-файла для PDF: {pdf_file}")
+        continue
+
+    excel_values = excel_data_per_file[matching_excel_file]
+    excel_numbers = {str(e[0]).strip() for e in excel_values}
+
+    missing_excel_numbers = []
+    for pdf_number, pdf_amount in pdf_values:
+        number = str(pdf_number).strip()
+        if number not in excel_numbers:
+            missing_excel_numbers.append({
+                'Заявка PDF отсутствующая в EXCEL': number,
+                'PDF выручка': pdf_amount,
+                'PDF файл': pdf_file
+            })
+            print(f"{number} отсутствует в {matching_excel_file}")
+
+    if missing_excel_numbers:
+        df = pd.DataFrame(missing_excel_numbers)
+        res_path = os.path.join(output_folder, f"missing_excel_values_{pdf_name}.csv")
+        df.to_csv(res_path, index=False)
+        print(f"Несовпадения (PDF→Excel) сохранены: {res_path}")
+    else:
+        print(f"{pdf_file}: все заявки найдены в Excel {matching_excel_file}")
