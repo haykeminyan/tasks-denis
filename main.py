@@ -30,7 +30,6 @@ for filename in os.listdir(folder):
                         pairs = list(zip(number_match, total_match))
                         pdf_res.extend(pairs)
         pdf_data_per_file[filename] = pdf_res
-
 excel_data_per_file = {}
 
 for filename in os.listdir(folder):
@@ -81,3 +80,36 @@ for pdf_file, pdf_values in pdf_data_per_file.items():
         print(f"Несовпадения найдены: {pdf_file} → {res_path}")
     else:
         print(f"OK: {pdf_file} — нет несовпадений")
+
+for excel_file, excel_values in excel_data_per_file.items():
+    excel_name = os.path.splitext(excel_file)[0]
+    matching_pdf_file = next(
+        (pdf_file for pdf_file in pdf_data_per_file if os.path.splitext(pdf_file)[0] == excel_name),
+        None
+    )
+
+    if not matching_pdf_file:
+        print(f"Нет подходящего PDF для Excel: {excel_file}")
+        continue
+
+    pdf_values = pdf_data_per_file[matching_pdf_file]
+    pdf_numbers = {str(p[0]).strip() for p in pdf_values}
+
+    missing_pdf_numbers = []
+    for excel_number in excel_values:
+        number = str(excel_number[0]).strip()
+        if number not in pdf_numbers:
+            missing_pdf_numbers.append({
+                'Заявка Excel отсутствующая в PDF': number,
+                'Excel выручка': excel_number[1],
+                'Excel файл': excel_file
+            })
+            print(f"{number} отсутствует в {matching_pdf_file}")
+
+    if missing_pdf_numbers:
+        df = pd.DataFrame(missing_pdf_numbers)
+        res_path = os.path.join(output_folder, f"missing_{excel_name}.csv")
+        df.to_csv(res_path, index=False)
+        print(f"Несовпадения сохранены: {res_path}")
+    else:
+        print(f"{excel_file}: все заявки найдены в {matching_pdf_file}")
